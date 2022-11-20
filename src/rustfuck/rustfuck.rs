@@ -1,6 +1,6 @@
 use std::{
     fs::File,
-    io::{stdout, Read, Stdout, Write},
+    io::{stdout, Read, Stdout, Write}, process::exit,
 };
 
 use super::util::get_u8_from_console;
@@ -45,7 +45,7 @@ impl Rustfuck {
             Ok(file) => file,
             Err(_error) => {
                 println!("{} does not exist or it isn't a file.", self.path);
-                return;
+                exit(1);
             }
         };
 
@@ -53,12 +53,13 @@ impl Rustfuck {
 
         if file.read_to_string(&mut buf).is_err() {
             println!("Error reading the file.");
-            return;
+            exit(1);
         }
 
         buf.chars().for_each(|c| {
             self.program.push(c);
         });
+
     }
 
     pub fn interp(&mut self) {
