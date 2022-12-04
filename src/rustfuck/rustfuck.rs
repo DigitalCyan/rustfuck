@@ -1,9 +1,12 @@
 use std::{
+    error::Error,
     fs::File,
-    io::{stdout, Read, Stdout, Write}, process::exit,
+    io::{stdout, Read, Stdout, Write},
 };
 
 use super::util::get_u8_from_console;
+
+pub static OPERATORS: [char; 8] = ['+', '-', '>', '<', '[', ']', '.', ','];
 
 pub struct Rustfuck {
     pub path: String,
@@ -21,7 +24,7 @@ pub struct InterpreterState {
 }
 
 impl Rustfuck {
-    pub fn new(path: String) -> Self {
+    pub fn new(path: &String) -> Self {
         let state = InterpreterState {
             memory: [0; 128],
             mem_ptr: 0,
@@ -31,38 +34,29 @@ impl Rustfuck {
         };
 
         return Self {
-            path: path,
+            path: path.clone(),
             program: Vec::new(),
             stdout: stdout(),
             state: state,
         };
     }
 
-    pub fn load(&mut self) {
-        let result = File::open(&self.path);
-
-        let mut file = match result {
-            Ok(file) => file,
-            Err(_error) => {
-                println!("{} does not exist or it isn't a file.", self.path);
-                exit(1);
-            }
-        };
+    fn load(&mut self) -> Result<(), Box<dyn Error>> {
+        let mut file = File::open(&self.path)?;
 
         let mut buf = String::new();
+        file.read_to_string(&mut buf)?;
 
-        if file.read_to_string(&mut buf).is_err() {
-            println!("Error reading the file.");
-            exit(1);
-        }
-
-        buf.chars().for_each(|c| {
+        buf.chars().filter(|c| OPERATORS.contains(c)).for_each(|c| {
             self.program.push(c);
         });
 
+        Ok(())
     }
 
-    pub fn interp(&mut self) {
+    pub fn interp(&mut self) -> Result<(), Box<dyn Error>> {
+        self.load()?;
+
         loop {
             let op = match self.program.get(self.state.prog_ptr) {
                 Some(op) => op.clone(),
@@ -129,5 +123,7 @@ impl Rustfuck {
                 }
             }
         }
+
+        Ok(())
     }
 }
